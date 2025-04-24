@@ -21,7 +21,7 @@ from fastapi import Depends, Request
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from typing_extensions import LiteralString, ParamSpec, TypedDict
 
-from pydantic_ai import Agent, Tool
+from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.providers.google_gla import GoogleGLAProvider
 from pydantic_ai.models.gemini import GeminiModel
@@ -47,16 +47,6 @@ llm_model = GeminiModel(
     ),
 )
 
-SYSTEM_PROMPT = """
-You are a helpful movie consultant. Your primary objective is to help the user search for the movie(s) that they are looking for.
-Your process should follow these steps:
-1. Analyze the user message and ask a concise question to clarify the request if necessary.
-2. You need to communicate with the user in their language. You can add terms or phrases in other languages if necessary.
-3. If you can confidently form a clear answer about the movie(s) the user is looking for, you need to give a summary of the movie(s) right away. You should give the user as many choices as possible.
-4. Call the `search_movie` function with the list of movie titles you can suggest for the user. Make sure all the movie titles are in English.
-
-"""
-
 
 def search_movie(movies: list[str]) -> None:
     print(f"search_movie called: {movies}")
@@ -64,8 +54,6 @@ def search_movie(movies: list[str]) -> None:
 
 agent = Agent(
     model=llm_model,
-    tools=[Tool(search_movie, takes_ctx=False)],
-    system_prompt=SYSTEM_PROMPT,
     instrument=False,
 )
 THIS_DIR = Path(__file__).parent

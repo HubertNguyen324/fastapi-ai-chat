@@ -8,7 +8,7 @@ router = APIRouter(tags=["Web Interface"])
 
 # Configure Jinja2 templates
 # Assumes templates are in 'app/templates' relative to the project root
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/", response_class=HTMLResponse)

@@ -228,9 +228,10 @@ class ChatManager:
         await asyncio.sleep(random.uniform(0.5, 1.5))
 
         # Generate response content (simple echo for now)
-        agent_response_content = (
+        full_response_content = (
             f"Okay, I received: '{user_message.content}' (from {agent_name})"
         )
+        words = full_response_content.split()
 
         # Create and store the agent message
         agent_message_id = str(uuid.uuid4())
@@ -239,26 +240,59 @@ class ChatManager:
             logger.warning("[Agent Sim] UUID collision! Regenerating agent message ID.")
             agent_message_id = str(uuid.uuid4())
 
-        agent_message = Message(
-            id=agent_message_id,
+        # Simulate streaming
+        current_chunk = ""
+        chunk_size = random.randint(
+            2, 5
+        )  # Simulate variable chunk sizes (words per chunk)
+        word_count = 0
+
+        for word in words:
+            current_chunk += word + " "
+            word_count += 1
+            if word_count >= chunk_size:
+                # Send the chunk
+                await self.send_agent_message_chunk(
+                    client_id=client_id,
+                    topic_id=topic.id,
+                    message_id=agent_message_id,
+                    content_chunk=current_chunk,
+                    is_first_chunk=(
+                        word_count == chunk_size
+                    ),  # Mark the very first chunk
+                )
+                # Reset for next chunk
+                current_chunk = ""
+                word_count = 0
+                chunk_size = random.randint(2, 5)
+                # Simulate network delay between chunks
+                await asyncio.sleep(random.uniform(0.1, 0.4))
+
+        # Send any remaining part as the last chunk
+        if current_chunk:
+            await self.send_agent_message_chunk(
+                client_id=client_id,
+                topic_id=topic.id,
+                message_id=agent_message_id,
+                content_chunk=current_chunk,
+                is_first_chunk=(len(words) <= chunk_size and current_chunk != ""),
+            )
+
+        await self.send_agent_stream_end(client_id, topic.id, agent_message_id)
+        logger.info(
+            f"[Agent Sim] Sent stream end signal for message ID: {agent_message_id}"
+        )
+
+        final_agent_message = Message(
+            id=agent_message_id,  # Use the same ID as the stream
             topic_id=topic.id,
             sender="agent",
-            content=agent_response_content,
-            timestamp=now_tz(),
+            content=full_response_content,  # Store the full assembled content
+            timestamp=now_tz(),  # Timestamp can be start or end of generation
         )
-        logger.info(f"[Agent Sim] Agent Message CREATED with ID: {agent_message.id}")
-        topic.messages.append(agent_message)  # Add to topic's message list
-
-        # Send the agent's message back to the client
+        topic.messages.append(final_agent_message)
         logger.info(
-            f"[Agent Sim] Sending agent message update to client '{client_id}' for topic '{topic.id}'..."
-        )
-        logger.debug(
-            f"[Agent Sim] Attempting to send agent_message object with ID: {agent_message.id}"
-        )
-        await self.send_message_update(client_id, agent_message)
-        logger.info(
-            f"[Agent Sim] Agent message update call completed for client '{client_id}'"
+            f"[Agent Sim] Stored complete agent message (ID: {agent_message_id}) in history."
         )
 
     async def _simulate_background_task(
@@ -504,6 +538,45 @@ class ChatManager:
                 await asyncio.sleep(300)
 
         logger.info("Session cleanup loop finished.")
+
+    async def send_agent_message_chunk(
+        self,
+        client_id: str,
+        topic_id: str,
+        message_id: str,
+        content_chunk: str,
+        is_first_chunk: bool,
+    ):
+        """Sends a single chunk of an agent's streaming message."""
+        logger.debug(
+            f"Sending agent msg chunk (ID: {message_id}, First: {is_first_chunk}) to client '{client_id}'"
+        )
+        update_data = {
+            "type": "agent_message_chunk",
+            "payload": {
+                "topic_id": topic_id,
+                "message_id": message_id,
+                "content_chunk": content_chunk,
+                "is_first_chunk": is_first_chunk,
+                # Add timestamp if needed, though less critical for chunks
+                # "timestamp": now_tz().isoformat()
+            },
+        }
+        # Use mode='json' if timestamp is included and needs serialization
+        await connection_manager.send_json(update_data, client_id)
+
+    async def send_agent_stream_end(
+        self, client_id: str, topic_id: str, message_id: str
+    ):
+        """Signals the end of a streamed agent message."""
+        logger.debug(
+            f"Sending agent msg stream end (ID: {message_id}) to client '{client_id}'"
+        )
+        update_data = {
+            "type": "agent_stream_end",
+            "payload": {"topic_id": topic_id, "message_id": message_id},
+        }
+        await connection_manager.send_json(update_data, client_id)
 
 
 # Create a singleton instance of the ChatManager for use across the application

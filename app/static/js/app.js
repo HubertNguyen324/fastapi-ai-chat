@@ -57,18 +57,22 @@ const app = createApp({
     const messages = ref({}); // Cache of messages per topic: { topic_id: Message[] }
     const taskResults = ref({}); // Cache of task results per topic: { topic_id: TaskResult[] }
     const newMessage = ref(""); // Model for the chat input textarea
+    const streamingMessages = ref({}); // Track streaming status: { message_id: boolean }
 
     // Template Refs (links to DOM elements)
     const chatInput = ref(null); // Reference to the <textarea> element
     const messageArea = ref(null); // Reference to the scrollable message display <div>
 
     // --- Computed Properties (Derived State) ---
-
     const currentMessages = computed(() => {
-      // Returns the array of messages for the currently selected topic, or an empty array.
-      return currentTopicId.value
+      // Add streaming status to messages for UI binding
+      const topicMsgs = currentTopicId.value
         ? messages.value[currentTopicId.value] || []
         : [];
+      return topicMsgs.map((msg) => ({
+        ...msg,
+        isStreaming: streamingMessages.value[msg.id] === true,
+      }));
     });
 
     const currentTaskResults = computed(() => {
@@ -184,9 +188,7 @@ const app = createApp({
       // Processes incoming messages based on their 'type'.
       const { type, payload } = data;
       console.log(`[WS Handle] Type: ${type}`);
-      // console.debug(`[WS Handle] Payload:`, payload); // Uncomment for detailed payload logging
-
-      loadingMessages.value = false; // Assume loading stops unless a specific action starts it
+      loadingMessages.value = false; // Stop general loading indicator
 
       switch (type) {
         case "initial_state":
@@ -200,6 +202,12 @@ const app = createApp({
           break;
         case "new_message":
           handleNewMessage(payload);
+          break;
+        case "agent_message_chunk":
+          handleAgentMessageChunk(payload);
+          break;
+        case "agent_stream_end":
+          handleAgentStreamEnd(payload);
           break;
         case "new_task_result":
           handleNewTaskResult(payload);
@@ -297,27 +305,26 @@ const app = createApp({
     }
 
     function handleNewMessage(payload) {
+      // Handles fully formed messages (mostly user messages now)
       console.log(
-        `[WS Handle] New message received for topic ${payload?.topic_id}`
+        `[WS Handle] New FULL message received for topic ${payload?.topic_id}`
       );
       if (payload.topic_id) {
-        // Ensure the message array exists for this topic
         if (!messages.value[payload.topic_id]) {
           messages.value[payload.topic_id] = [];
         }
-        // Add the message only if its ID isn't already present
         if (
           !messages.value[payload.topic_id].some((m) => m.id === payload.id)
         ) {
+          // Ensure isStreaming is false for non-streamed messages
+          streamingMessages.value[payload.id] = false;
           messages.value[payload.topic_id].push(payload);
-          // If the message is for the topic currently being viewed, scroll
           if (payload.topic_id === currentTopicId.value) {
-            scrollToBottom(); // Smooth scroll for new incoming messages
+            scrollToBottom();
           }
         } else {
-          // Log if a duplicate message ID is received (should be rare)
           console.warn(
-            `[WS Handle] Duplicate message ID ${payload.id} received, skipped.`
+            `[WS Handle] Duplicate full message ID ${payload.id} received, skipped.`
           );
         }
       } else {
@@ -325,6 +332,109 @@ const app = createApp({
           "[WS Handle] Received new_message without topic_id:",
           payload
         );
+      }
+    }
+
+    function handleAgentMessageChunk(payload) {
+      // Handles incoming chunks of a streaming agent message.
+      const { topic_id, message_id, content_chunk, is_first_chunk } = payload;
+      console.log(
+        `[WS Handle] Agent Chunk for msg ${message_id} in topic ${topic_id}. First: ${is_first_chunk}`
+      );
+
+      if (!topic_id || !message_id || content_chunk === undefined) {
+        console.warn(
+          "[WS Handle] Invalid agent_message_chunk payload:",
+          payload
+        );
+        return;
+      }
+
+      // Ensure message array exists for the topic
+      if (!messages.value[topic_id]) {
+        messages.value[topic_id] = [];
+      }
+
+      // Find the existing message being streamed or create it if it's the first chunk
+      let messageIndex = messages.value[topic_id].findIndex(
+        (m) => m.id === message_id
+      );
+
+      if (messageIndex === -1) {
+        // First chunk received for this message ID
+        if (is_first_chunk) {
+          console.log(
+            `[WS Handle] Creating new message entry for streaming ID ${message_id}`
+          );
+          const newMessage = {
+            id: message_id,
+            topic_id: topic_id,
+            sender: "agent",
+            content: content_chunk, // Start with the first chunk
+            timestamp: new Date().toISOString(), // Use client time for start, backend stores final
+            // isStreaming: true // Computed property handles this now
+          };
+          messages.value[topic_id].push(newMessage);
+          streamingMessages.value[message_id] = true; // Mark as streaming
+        } else {
+          // Received a non-first chunk for a message we haven't seen? Log warning.
+          console.warn(
+            `[WS Handle] Received non-first chunk for unknown message ID ${message_id}. Ignoring.`
+          );
+          return;
+        }
+      } else {
+        // Append chunk to existing message content
+        // Ensure reactivity by updating the object correctly
+        const existingMessage = messages.value[topic_id][messageIndex];
+        // Create a new object to ensure Vue detects the change if needed,
+        // though direct property update should work with refs.
+        messages.value[topic_id][messageIndex] = {
+          ...existingMessage,
+          content: existingMessage.content + content_chunk,
+        };
+        // Ensure it's marked as streaming if it wasn't already
+        if (!streamingMessages.value[message_id]) {
+          streamingMessages.value[message_id] = true;
+        }
+      }
+
+      // Scroll if the chunk belongs to the currently viewed topic
+      if (topic_id === currentTopicId.value) {
+        scrollToBottom();
+      }
+    }
+
+    function handleAgentStreamEnd(payload) {
+      // Marks a streamed message as complete.
+      const { topic_id, message_id } = payload;
+      console.log(
+        `[WS Handle] Agent Stream End for msg ${message_id} in topic ${topic_id}`
+      );
+
+      if (topic_id && message_id) {
+        // Mark the message as no longer streaming
+        if (streamingMessages.value[message_id]) {
+          streamingMessages.value[message_id] = false;
+          // Force Vue update if needed, though changing the ref should trigger computed property update
+          // streamingMessages.value = { ...streamingMessages.value };
+        }
+
+        // Optional: Could fetch the final message from backend here if frontend assembly isn't trusted,
+        // but backend already stores the full message.
+        // Find the message and update its timestamp from backend maybe? Or just leave as is.
+        const msgIndex = messages.value[topic_id]?.findIndex(
+          (m) => m.id === message_id
+        );
+        if (msgIndex !== -1 && messages.value[topic_id]) {
+          // Example: Update timestamp if backend sent it with stream end
+          // if (payload.timestamp) {
+          //    messages.value[topic_id][msgIndex].timestamp = payload.timestamp;
+          // }
+          console.log(`Message ${message_id} marked as complete.`);
+        }
+      } else {
+        console.warn("[WS Handle] Invalid agent_stream_end payload:", payload);
       }
     }
 

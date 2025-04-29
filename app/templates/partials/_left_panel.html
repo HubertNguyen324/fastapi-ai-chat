@@ -1,26 +1,25 @@
 <aside :class="[
-    'w-64 flex-shrink-0 flex flex-col h-full', // Base structure
-    'bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg bg-transition',
-    'transition-all duration-300 ease-in-out',
-    
-    // Base width
-    'w-64',
+    'w-60 flex-shrink-0 flex flex-col h-full', /* Base structure and width (15rem) */
+    'bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg bg-transition', /* Styling */
+    'transition-all duration-300 ease-in-out', /* Animation for sliding/margin */
 
-    // Mobile: Absolute positioning, slide transform for overlay
-    isMobile ? 'absolute inset-y-0 left-0 z-40 transform' : '',
-    isMobile && isLeftPanelOpen ? 'translate-x-0' : '',
-    isMobile && !isLeftPanelOpen ? '-translate-x-full' : '',
+    /* Mobile Behavior: Absolute positioning, slides over content */
+    isMobile ? 'absolute inset-y-0 left-0 z-40 transform' : '', /* z-40 is below fixed toggle button (z-50) */
+    isMobile && isLeftPanelOpen ? 'translate-x-0' : '', /* Slides in */
+    isMobile && !isLeftPanelOpen ? '-translate-x-full' : '', /* Slides out completely */
 
-    // Desktop: Relative positioning, negative margin for push/pull
-    !isMobile ? 'relative' : '',
-    !isMobile && isLeftPanelOpen ? 'ml-0' : '', // Normal margin when open
-    !isMobile && !isLeftPanelOpen ? '-ml-64' : '' // Use negative margin to hide
+    /* Desktop Behavior: Relative positioning, uses negative margin to hide */
+    !isMobile ? 'relative' : '', /* Takes up space in the flex layout */
+    !isMobile && isLeftPanelOpen ? 'ml-0' : '', /* Normal position when open */
+    !isMobile && !isLeftPanelOpen ? '-ml-64' : '' /* Slides left by its own width to hide */
 ]">
     <div class="h-16 flex items-center px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate ml-12">Topics</h2>
     </div>
 
     <div class="p-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <button @click.prevent="startNewChat"
+                title="Start a new chat session"
                 class="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-indigo-500 transition duration-150 ease-in-out">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -29,15 +28,17 @@
         </button>
     </div>
 
-    <nav class="flex-grow overflow-y-auto p-2 space-y-1">
+    <nav class="flex-grow overflow-y-auto p-2 space-y-1" aria-label="Chat topics">
         <a v-for="(topic, index) in topics"
            :key="topic.id"
            href="#"
            @click.prevent="selectTopic(topic.id)"
+           :aria-current="topic.id === currentTopicId ? 'page' : undefined"
            :class="['block px-3 py-2 rounded-md text-sm font-medium truncate transition-colors duration-150 ease-in-out',
-                    topic.id === currentTopicId
+                    topic.id === currentTopicId /* Active topic style */
                         ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-200'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-100']">
+                        : /* Inactive topic style */
+                        'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-100']">
            <span class="font-semibold">[[ getAgentName(topic.agent_id) ]]</span> - <span>[[ topic.name || `Chat ${index + 1}` ]]</span>
         </a>
         <div v-if="topics.length === 0" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 italic">
@@ -45,4 +46,6 @@
         </div>
     </nav>
 
-    {% include 'partials/_left_panel_footer.html' %} </aside>
+    {% include 'partials/_left_panel_footer.html' %}
+
+</aside>

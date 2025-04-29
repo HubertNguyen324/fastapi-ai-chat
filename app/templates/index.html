@@ -6,35 +6,43 @@
     <link href="/static/css/styles.css" rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <style>
+        /* Custom scrollbar styling */
         ::-webkit-scrollbar { width: 6px; height: 6px;}
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background-color: rgba(155, 155, 155, 0.5); border-radius: 20px; border: transparent; }
         .dark ::-webkit-scrollbar-thumb { background-color: rgba(100, 100, 100, 0.7); }
+        /* Hide elements with v-cloak until Vue is ready */
         [v-cloak] { display: none; }
+        /* Smooth background transitions for theme switching */
         body, .bg-transition { transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 bg-transition">
 
-    <div id="app" class="flex h-full w-full relative" v-cloak> <button @click="toggleLeftPanel"
+    <div id="app" class="flex h-full w-full relative" v-cloak>
+        <button @click="toggleLeftPanel"
                 title="Toggle Topics Panel"
+                aria-label="Toggle topics panel"
                 class="fixed top-3 left-3 z-50 p-2 rounded-md bg-gray-100/80 dark:bg-gray-800/80 text-gray-600 dark:text-gray-300 shadow-md backdrop-blur-sm hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-150">
-             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-             <span class="sr-only">Toggle topics panel</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+            <span class="sr-only">Toggle topics panel</span>
         </button>
+
         {% include 'partials/_left_panel.html' %}
 
-        <div :class="['flex-1 flex overflow-hidden transition-margin duration-300 ease-in-out', // Use transition-margin
-            // Desktop Open: Margin matches panel width (w-60 = 15rem) - CORRECTED
-            {'lg:ml+60': isLeftPanelOpen && !isMobile},
-            // Desktop Closed: No margin needed as panel hides with negative margin
-            {'lg:ml-0': !isLeftPanelOpen && !isMobile}
-        ]">
+        <div :class="['flex-1 flex overflow-hidden transition-margin duration-300 ease-in-out lg:ml-0', // Base ml-0 for large screens+
+                     // Desktop Open: Margin matches panel width (240px) + border (1px) = 241px
+                     {'lg:ml+64': isLeftPanelOpen && !isMobile}
+                    ]">
 
             {% include 'partials/_chat_area.html' %}
 
             {% include 'partials/_right_panel.html' %}
 
-        </div> </div> <script src="/static/js/app.js"></script>
+        </div>
+    </div>
+    <script src="/static/js/app.js"></script>
 </body>
 </html>

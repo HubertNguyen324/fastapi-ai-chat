@@ -47,7 +47,15 @@ llm_model = GeminiModel(
     ),
 )
 
-agent = Agent(model=llm_model, instrument=False)
+
+def search_movie(movies: list[str]) -> None:
+    print(f"search_movie called: {movies}")
+
+
+agent = Agent(
+    model=llm_model,
+    instrument=False,
+)
 THIS_DIR = Path(__file__).parent
 
 

@@ -1,0 +1,21 @@
+{
+    "name": "ai-agent-app-frontend",
+    "version": "1.0.0",
+    "description": "Tailwind CSS setup",
+    "main": "index.js",
+    "scripts": {
+        "build:css": "tailwindcss -i ./input.css -o ./static/css/styles.css",
+        "watch:css": "tailwindcss -i ./input.css -o ./static/css/styles.css --watch"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "tailwindcss": "^3.3.3"
+    },
+    "dependencies": {
+        "@headlessui/vue": "^1.7.23",
+        "@heroicons/vue": "^2.2.0",
+        "caniuse-lite": "^1.0.30001715"
+    }
+}

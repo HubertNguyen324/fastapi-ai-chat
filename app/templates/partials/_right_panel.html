@@ -1,11 +1,20 @@
 <aside :class="[
-    'bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700', /* Base styling */
-    'transition-all duration-300 ease-in-out flex flex-col bg-transition shadow-lg', /* Transitions and layout */
-    isRightPanelOpen ? 'w-72' : 'w-0 opacity-0', /* Open/close behavior */
-    'flex-shrink-0' /* Prevent shrinking in flex layout */
+    'flex-shrink-0 flex flex-col h-full', /* Base structure */
+    'bg-gray-50 dark:bg-gray-900', /* Base styling */
+    'transition-all duration-300 ease-in-out bg-transition shadow-lg', /* Transitions and appearance */
+
+    /* Mobile Behavior: Absolute positioning, slides over content */
+    isMobile ? 'absolute inset-y-0 right-0 z-30 transform' : '', /* z-30 is below left panel (z-40) and button (z-50) */
+    isMobile && isRightPanelOpen ? 'translate-x-0' : '', /* Slides in from right */
+    isMobile && !isRightPanelOpen ? 'translate-x-full' : '', /* Slides out to right */
+
+    /* Desktop Behavior: Relative positioning, toggle width/opacity */
+    !isMobile ? 'relative' : '', /* Takes space in the flex layout */
+    !isMobile && isRightPanelOpen ? 'w-72 opacity-100' : '', /* Width and visible when open */
+    !isMobile && !isRightPanelOpen ? 'w-0 opacity-0 border-l-0 overflow-hidden' : '' /* Zero width, fade out, hide border/overflow when closed */
 ]">
-     <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 overflow-hidden">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">Task Results</h2>
+     <div class="h-16 flex items-center justify-between px-4 flex-shrink-0 overflow-hidden">
+        <h2 :class="['text-lg font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap', {'invisible': !isRightPanelOpen && !isMobile}]">Task Tracking</h2>
          <button @click="toggleRightPanel"
                  title="Close task results panel"
                  aria-label="Close task results panel"
@@ -17,7 +26,7 @@
         </button>
     </div>
 
-    <div class="flex-grow overflow-y-auto p-4 space-y-3">
+    <div :class="['flex-grow overflow-y-auto p-4 space-y-3', {'overflow-hidden': !isRightPanelOpen && !isMobile}]">
         <div v-for="result in currentTaskResults" :key="result.id"
              class="p-3 bg-green-100 dark:bg-green-900/50 border border-green-300 dark:border-green-700/50 rounded-md shadow-sm text-sm">
              <p class="font-medium text-green-800 dark:text-green-200 break-words">[[ result.content ]]</p>

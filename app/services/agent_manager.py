@@ -1,5 +1,9 @@
 import logging
-from app.models.agent import Agent
+
+from pydantic_ai import Agent
+from pydantic_ai.messages import ModelResponse
+
+from app.models.llm_agent import LLMAgent
 
 logger = logging.getLogger(__name__)
 
@@ -12,33 +16,30 @@ class AgentManager:
     """
 
     def __init__(self):
-        # Placeholder agents
-        # TODO: Replace with dynamic loading mechanism (DB, config file, etc.)
-        self._agents: list[Agent] = [
-            Agent(id="agent_001", name="EchoBot"),
-            Agent(id="agent_002", name="TaskMaster"),
-            Agent(id="agent_003", name="HelperAI"),
-            # Add more predefined agents if needed
-        ]
+        self._agents: list[LLMAgent] = []
         # Create a dictionary for quick ID-based lookup
-        self._agents_by_id: dict[str, Agent] = {
-            agent.id: agent for agent in self._agents
-        }
-        logger.info(
-            f"Initialized AgentManager with {len(self._agents)} agents: {[a.name for a in self._agents]}"
-        )
+        self._agents_by_id: dict[str, LLMAgent] = {}
 
-    def list_agents(self) -> list[Agent]:
+    def list_agents(self) -> list[LLMAgent]:
         """Returns a list of all available agents."""
         return self._agents
 
-    def get_agent_by_id(self, agent_id: str) -> Agent | None:
+    def get_agent_by_id(self, agent_id: str) -> LLMAgent | None:
         """Retrieves an agent by its unique ID."""
         return self._agents_by_id.get(agent_id)
 
-    def get_default_agent(self) -> Agent | None:
+    def get_default_agent(self) -> LLMAgent | None:
         """Returns the default agent (e.g., the first one in the list)."""
         return self._agents[0] if self._agents else None
+
+    def add_agent(self, agent: LLMAgent):
+        """Adds a new agent to the list."""
+        self._agents.append(agent)
+        self._agents_by_id[agent.id] = agent
+
+    async def run(self, prompt: str, agent_id: str) -> ModelResponse:
+        """Async run the user prompt"""
+        raise NotImplementedError
 
 
 # Create a singleton instance to be used throughout the application

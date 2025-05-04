@@ -55,7 +55,7 @@ app = FastAPI(
 # Serve CSS, JS files from the 'app/static' directory at the '/static' URL path
 # Check if the directory exists to avoid errors during startup if structure is wrong
 try:
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    app.mount("/static", StaticFiles(directory="app/static"), name="static")
     logger.info("Mounted static files directory at /static")
 except RuntimeError as e:
     logger.error(

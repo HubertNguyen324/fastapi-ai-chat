@@ -3,7 +3,7 @@ import logging
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelResponse
 
-from app.models.llm_agent import LLMAgent
+from backend.models.llm_agent import LLMAgent
 
 logger = logging.getLogger(__name__)
 

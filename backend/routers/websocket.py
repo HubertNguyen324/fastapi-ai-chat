@@ -1,9 +1,9 @@
 import json
 import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from app.services.connection_manager import connection_manager
-from app.services.chat_manager import chat_manager
-from app.services.agent_manager import agent_manager
+from backend.services.connection_manager import connection_manager
+from backend.services.chat_manager import chat_manager
+from backend.services.agent_manager import agent_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ws", tags=["WebSocket"])

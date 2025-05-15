@@ -6,10 +6,10 @@ import datetime
 from datetime import timezone, timedelta
 
 # Import models and managers/config
-from app.models.chat import Session, Topic, Message, TaskResult
-from app.services.connection_manager import connection_manager
-from app.services.agent_manager import agent_manager
-from app.config import settings  # Import configured settings
+from backend.models.chat import Session, Topic, Message, TaskResult
+from backend.services.connection_manager import connection_manager
+from backend.services.agent_manager import agent_manager
+from backend.config import settings  # Import configured settings
 
 logger = logging.getLogger(__name__)
 

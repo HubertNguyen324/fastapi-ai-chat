@@ -4,9 +4,9 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager  # Use async context manager for lifespan
 
 # Import routers, services, and config
-from app.routers import web, websocket
-from app.services.chat_manager import chat_manager  # Import the singleton instance
-from app.config import settings  # Import the settings instance
+from backend.routers import web, websocket
+from backend.services.chat_manager import chat_manager  # Import the singleton instance
+from backend.config import settings  # Import the settings instance
 
 # Configure logging
 logging.basicConfig(
